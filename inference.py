@@ -25,7 +25,7 @@ def _env_base_url() -> str:
 def _make_openai_client() -> Tuple[OpenAI, str]:
     api_key = os.environ.get("OPENAI_API_KEY", "")
     base = os.environ.get("API_BASE_URL", "https://api.openai.com/v1").rstrip("/")
-    model = os.environ.get("MODEL_NAME", "gpt-4o-mini")
+    model = os.environ.get("MODEL_NAME", "CognitionEnv")
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY is required for baseline inference.")
     client = OpenAI(api_key=api_key, base_url=base)

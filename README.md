@@ -60,7 +60,7 @@ Uses the **OpenAI** Python client (`API_BASE_URL`, `MODEL_NAME`, `OPENAI_API_KEY
 |----------|---------|
 | `ENV_BASE_URL` | HTTP base of the running env, e.g. `http://127.0.0.1:8000` or your Space URL |
 | `API_BASE_URL` | LLM API base, e.g. `https://api.openai.com/v1` |
-| `MODEL_NAME` | Model id, e.g. `gpt-4o-mini` |
+| `MODEL_NAME` | Model id, e.g. `CognitionEnv` |
 | `OPENAI_API_KEY` | API key (if unset, a deterministic keyword baseline runs for smoke tests) |
 | `HF_TOKEN` | Hugging Face token (Spaces / Hub; read in script per hackathon spec) |
 
