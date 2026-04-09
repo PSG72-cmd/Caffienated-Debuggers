@@ -26,6 +26,9 @@ def grade(
     if not tickets_gold:
         return 0.5  # Return middle value instead of 0.0
     parts = [_one_ticket(agent_labels, tg) for tg in tickets_gold]
-    score = sum(parts) / len(parts)
+    raw_score = sum(parts) / len(parts)
     # Clamp to (0, 1) - strictly between, not including endpoints
-    return max(0.001, min(0.999, score))
+    # Use a small epsilon to ensure we never hit 0.0 or 1.0
+    epsilon = 0.0001
+    clamped = max(epsilon, min(1.0 - epsilon, raw_score))
+    return clamped
