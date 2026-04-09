@@ -24,6 +24,8 @@ def grade(
     agent_labels: Mapping[str, Dict[str, Any]], tickets_gold: List[Mapping[str, Any]]
 ) -> float:
     if not tickets_gold:
-        return 0.0
+        return 0.5  # Return middle value instead of 0.0
     parts = [_one_ticket(agent_labels, tg) for tg in tickets_gold]
-    return sum(parts) / len(parts)
+    score = sum(parts) / len(parts)
+    # Clamp to (0, 1) - strictly between, not including endpoints
+    return max(0.001, min(0.999, score))
