@@ -23,11 +23,12 @@ def _env_base_url() -> str:
 
 
 def _make_openai_client() -> Tuple[OpenAI, str]:
-    api_key = os.environ.get("OPENAI_API_KEY", "")
+    # Check for both standard OPENAI_API_KEY and validator-provided API_KEY
+    api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("API_KEY", "")
     base = os.environ.get("API_BASE_URL", "https://api.openai.com/v1").rstrip("/")
-    model = os.environ.get("MODEL_NAME", "CognitionEnv")
+    model = os.environ.get("MODEL_NAME", "gpt-3.5-turbo")
     if not api_key:
-        raise RuntimeError("OPENAI_API_KEY is required for baseline inference.")
+        raise RuntimeError("API_KEY (or OPENAI_API_KEY) environment variable is required.")
     client = OpenAI(api_key=api_key, base_url=base)
     return client, model
 
@@ -176,11 +177,12 @@ def main() -> None:
     _ = os.environ.get("HF_TOKEN", "")
     base = _env_base_url()
     ws_url = http_to_ws_url(base)
-    use_llm = bool(os.environ.get("OPENAI_API_KEY"))
+    # Check for both standard OPENAI_API_KEY and validator-provided API_KEY
+    use_llm = bool(os.environ.get("OPENAI_API_KEY") or os.environ.get("API_KEY"))
 
     if not use_llm:
         print(
-            "Warning: OPENAI_API_KEY not set; running deterministic keyword policy instead.",
+            "Warning: OPENAI_API_KEY/API_KEY not set; running deterministic keyword policy instead.",
             file=sys.stderr,
             flush=True
         )
