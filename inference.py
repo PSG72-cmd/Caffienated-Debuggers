@@ -97,6 +97,22 @@ def _heuristic_action(obs: TriageObservation, step_idx: int) -> TriageAction:
     return TriageAction(command="submit", metadata={})
 
 
+def _test_llm_connection(client: OpenAI, model: str) -> bool:
+    """Test that the LLM API is working."""
+    try:
+        print(f"[DEBUG] Testing LLM connection with a simple API call...", file=sys.stderr, flush=True)
+        resp = client.chat.completions.create(
+            model=model,
+            temperature=0.0,
+            messages=[{"role": "user", "content": "Hello"}],
+        )
+        print(f"[DEBUG] LLM test call successful! Response: {resp.choices[0].message.content[:50]}...", file=sys.stderr, flush=True)
+        return True
+    except Exception as e:
+        print(f"[DEBUG] LLM test call failed: {e}", file=sys.stderr, flush=True)
+        return False
+
+
 def _llm_next_action(client: OpenAI, model: str, history: List[Dict[str, str]]) -> TriageAction:
     print(f"[DEBUG] Calling LLM API with model={model}", file=sys.stderr, flush=True)
     resp = client.chat.completions.create(
@@ -211,6 +227,18 @@ def main() -> None:
             file=sys.stderr,
             flush=True
         )
+    else:
+        # If we have LLM credentials, test the connection BEFORE trying tasks
+        # This ensures at least one API call is made through the proxy, even if WebSocket fails
+        print(f"[DEBUG] Testing LLM API connection upfront...", file=sys.stderr, flush=True)
+        try:
+            client, model = _make_openai_client()
+            if _test_llm_connection(client, model):
+                print(f"[DEBUG] LLM API connection confirmed - API calls will be made through proxy", file=sys.stderr, flush=True)
+            else:
+                print(f"[DEBUG] LLM API test failed but will attempt to continue", file=sys.stderr, flush=True)
+        except Exception as e:
+            print(f"[DEBUG] Failed to initialize LLM client: {e}", file=sys.stderr, flush=True)
 
     tasks = ["easy", "medium", "hard"]
     for t in tasks:
