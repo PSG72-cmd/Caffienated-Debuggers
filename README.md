@@ -7,7 +7,7 @@ sdk: docker
 python_version: "3.10"
 app_port: 7860
 suggested_hardware: "cpu-basic"
-short_description: Real-world OpenEnv environment for intelligent ticket triage using reinforcement learning.
+short_description: Intelligent ticket triage with reinforcement learning
 tags:
   - reinforcement-learning
   - openenv
