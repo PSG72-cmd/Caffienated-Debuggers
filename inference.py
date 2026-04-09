@@ -23,12 +23,15 @@ def _env_base_url() -> str:
 
 
 def _make_openai_client() -> Tuple[OpenAI, str]:
-    # Check for both standard OPENAI_API_KEY and validator-provided API_KEY
-    api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("API_KEY", "")
+    # Check for validator-provided API_KEY first, then fall back to OPENAI_API_KEY
+    api_key = os.environ.get("API_KEY") or os.environ.get("OPENAI_API_KEY", "")
     base = os.environ.get("API_BASE_URL", "https://api.openai.com/v1").rstrip("/")
     model = os.environ.get("MODEL_NAME", "gpt-3.5-turbo")
+    
     if not api_key:
         raise RuntimeError("API_KEY (or OPENAI_API_KEY) environment variable is required.")
+    
+    print(f"[DEBUG] Creating OpenAI client with base_url={base} model={model}", file=sys.stderr, flush=True)
     client = OpenAI(api_key=api_key, base_url=base)
     return client, model
 
@@ -95,17 +98,20 @@ def _heuristic_action(obs: TriageObservation, step_idx: int) -> TriageAction:
 
 
 def _llm_next_action(client: OpenAI, model: str, history: List[Dict[str, str]]) -> TriageAction:
+    print(f"[DEBUG] Calling LLM API with model={model}", file=sys.stderr, flush=True)
     resp = client.chat.completions.create(
         model=model,
         temperature=0.0,
         messages=history,
     )
+    print(f"[DEBUG] LLM API response received", file=sys.stderr, flush=True)
     content = (resp.choices[0].message.content or "").strip()
     return _parse_llm_action(content)
 
 
 def run_task(task_key: str, session: TicketTriageSession, use_llm: bool) -> Tuple[float, bool]:
     print(f"[START] Task {task_key}", flush=True)
+    print(f"[DEBUG] run_task called with use_llm={use_llm}", file=sys.stderr, flush=True)
     obs = session.reset(task=task_key)
     rewards: List[float] = []
     err_accum: Optional[str] = None
@@ -113,7 +119,11 @@ def run_task(task_key: str, session: TicketTriageSession, use_llm: bool) -> Tupl
     client: Optional[OpenAI] = None
     model = ""
     if use_llm:
+        print(f"[DEBUG] Initializing LLM client", file=sys.stderr, flush=True)
         client, model = _make_openai_client()
+        print(f"[DEBUG] LLM client initialized successfully with model={model}", file=sys.stderr, flush=True)
+    else:
+        print(f"[DEBUG] Using heuristic mode (no LLM)", file=sys.stderr, flush=True)
 
     system = (
         "You control an IT ticket triage simulator. Reply with ONE JSON object only, "
@@ -135,8 +145,10 @@ def run_task(task_key: str, session: TicketTriageSession, use_llm: bool) -> Tupl
         action_str = ""
         try:
             if use_llm and client is not None:
+                print(f"[DEBUG] Step {step_idx}: Using LLM", file=sys.stderr, flush=True)
                 act = _llm_next_action(client, model, history)
             else:
+                print(f"[DEBUG] Step {step_idx}: Using heuristics (use_llm={use_llm} client={client is not None})", file=sys.stderr, flush=True)
                 act = _heuristic_action(last_obs, step_idx)
             action_str = json.dumps(act.model_dump(exclude_none=True), ensure_ascii=False)
             last_obs = session.step(act)
@@ -148,6 +160,7 @@ def run_task(task_key: str, session: TicketTriageSession, use_llm: bool) -> Tupl
             err = str(e)
             err_accum = err
             rewards.append(0.0)
+            print(f"[DEBUG] Step {step_idx}: Error {err}", file=sys.stderr, flush=True)
             action_str = json.dumps({"error": err})
 
         r_last = rewards[-1] if rewards else 0.0
@@ -175,14 +188,26 @@ def run_task(task_key: str, session: TicketTriageSession, use_llm: bool) -> Tupl
 
 def main() -> None:
     _ = os.environ.get("HF_TOKEN", "")
+    
+    # Debug: Print what env variables we have
+    api_key_provided = bool(os.environ.get("API_KEY"))
+    openai_key_provided = bool(os.environ.get("OPENAI_API_KEY"))
+    api_base_url = os.environ.get("API_BASE_URL", "")
+    
+    print(f"[DEBUG] API_KEY provided: {api_key_provided}", file=sys.stderr, flush=True)
+    print(f"[DEBUG] OPENAI_API_KEY provided: {openai_key_provided}", file=sys.stderr, flush=True)
+    print(f"[DEBUG] API_BASE_URL: {api_base_url}", file=sys.stderr, flush=True)
+    
     base = _env_base_url()
     ws_url = http_to_ws_url(base)
-    # Check for both standard OPENAI_API_KEY and validator-provided API_KEY
-    use_llm = bool(os.environ.get("OPENAI_API_KEY") or os.environ.get("API_KEY"))
+    # Check for validator-provided API_KEY first, then OPENAI_API_KEY
+    use_llm = bool(os.environ.get("API_KEY") or os.environ.get("OPENAI_API_KEY"))
+
+    print(f"[DEBUG] use_llm={use_llm}", file=sys.stderr, flush=True)
 
     if not use_llm:
         print(
-            "Warning: OPENAI_API_KEY/API_KEY not set; running deterministic keyword policy instead.",
+            "Warning: API_KEY/OPENAI_API_KEY not set; running deterministic keyword policy instead.",
             file=sys.stderr,
             flush=True
         )
