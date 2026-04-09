@@ -28,14 +28,14 @@ class TicketTriageSession:
         
         for attempt in range(max_retries):
             try:
-                self._ws = websocket.create_connection(ws_url, timeout=15)
-                print(f"WebSocket connected successfully on attempt {attempt + 1}", file=__import__('sys').stderr)
+                self._ws = websocket.create_connection(ws_url, timeout=10)
+                print(f"WebSocket connected successfully on attempt {attempt + 1}", file=__import__('sys').stderr, flush=True)
                 return
             except Exception as e:
                 last_error = e
                 if attempt < max_retries - 1:
-                    wait_time = 3 ** attempt  # exponential backoff: 3s, 9s, 27s, 81s, 243s
-                    print(f"WebSocket connection attempt {attempt + 1}/{max_retries} failed: {e}. Retrying in {wait_time}s...", file=__import__('sys').stderr)
+                    wait_time = 2 ** attempt  # exponential backoff: 1s, 2s, 4s, 8s, 16s (31s total)
+                    print(f"WebSocket connection attempt {attempt + 1}/{max_retries} failed: {e}. Retrying in {wait_time}s...", file=__import__('sys').stderr, flush=True)
                     time.sleep(wait_time)
         
         # If we get here, all retries failed

@@ -12,7 +12,7 @@ def check_server_health(url="http://127.0.0.1:8000/health", max_retries=30):
         try:
             response = requests.get(url, timeout=2)
             if response.status_code == 200:
-                print(f"✓ Server is healthy (attempt {attempt + 1})")
+                print(f"[OK] Server is healthy (attempt {attempt + 1})")
                 return True
         except requests.exceptions.RequestException:
             print(f"Waiting for server... (attempt {attempt + 1}/{max_retries})")
@@ -52,16 +52,16 @@ if __name__ == "__main__":
     try:
         # Check server health
         if not check_server_health():
-            print("✗ Server failed to start/become healthy")
+            print("[FAIL] Server failed to start/become healthy")
             sys.exit(1)
         
         # Run inference test
         success = test_inference()
         
         if success:
-            print("\n✓ Test passed!")
+            print("\n[PASS] Test passed!")
         else:
-            print("\n✗ Test failed - see errors above")
+            print("\n[FAIL] Test failed - see errors above")
             sys.exit(1)
             
     finally:

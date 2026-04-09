@@ -104,7 +104,7 @@ def _llm_next_action(client: OpenAI, model: str, history: List[Dict[str, str]]) 
 
 
 def run_task(task_key: str, session: TicketTriageSession, use_llm: bool) -> Tuple[float, bool]:
-    print(f"[START] Task {task_key}")
+    print(f"[START] Task {task_key}", flush=True)
     obs = session.reset(task=task_key)
     rewards: List[float] = []
     err_accum: Optional[str] = None
@@ -154,7 +154,8 @@ def run_task(task_key: str, session: TicketTriageSession, use_llm: bool) -> Tupl
         esc = action_str.replace('"', '\\"')
         print(
             f'[STEP] step={step_idx} action="{esc}" reward={r_last:+.2f} '
-            f"done={done} error={err if err is not None else None}"
+            f"done={done} error={err if err is not None else None}",
+            flush=True
         )
         if err:
             break
@@ -165,7 +166,7 @@ def run_task(task_key: str, session: TicketTriageSession, use_llm: bool) -> Tupl
     raw = sum(rewards)
     score = max(0.0, min(1.0, raw / max_r if max_r > 0 else 0.0))
     success = score >= SUCCESS_THRESHOLD
-    print(f"[END] task={task_key} score={score:.4f} success={success}")
+    print(f"[END] task={task_key} score={score:.4f} success={success}", flush=True)
     if err_accum:
         _ = err_accum
     return score, success
@@ -181,6 +182,7 @@ def main() -> None:
         print(
             "Warning: OPENAI_API_KEY not set; running deterministic keyword policy instead.",
             file=sys.stderr,
+            flush=True
         )
 
     tasks = ["easy", "medium", "hard"]
@@ -190,18 +192,23 @@ def main() -> None:
             session = TicketTriageSession(ws_url)
             run_task(t, session, use_llm=use_llm)
         except RuntimeError as e:
-            print(f"Warning: Could not establish WebSocket connection to {ws_url}: {e}", file=sys.stderr)
-            print(f"Continuing with next task...", file=sys.stderr)
-            continue
+            # Print structured output even when connection fails
+            print(f"[START] Task {t}", flush=True)
+            print(f'[STEP] step=1 action="{{\\"error\\": \\"connection_failed\\"}}" reward=+0.00 done=False error={str(e)}', flush=True)
+            print(f"[END] task={t} score=0.0000 success=False", flush=True)
+            print(f"Warning: Could not establish WebSocket connection to {ws_url}: {e}", file=sys.stderr, flush=True)
         except Exception as e:
-            print(f"Error running task {t}: {e}", file=sys.stderr)
-            continue
+            # Print structured output even when other errors occur
+            print(f"[START] Task {t}", flush=True)
+            print(f'[STEP] step=1 action="{{\\"error\\": \\"execution_failed\\"}}" reward=+0.00 done=False error={str(e)}', flush=True)
+            print(f"[END] task={t} score=0.0000 success=False", flush=True)
+            print(f"Error running task {t}: {e}", file=sys.stderr, flush=True)
         finally:
             if session is not None:
                 try:
                     session.close()
                 except Exception as e:
-                    print(f"Error closing session: {e}", file=sys.stderr)
+                    print(f"Error closing session: {e}", file=sys.stderr, flush=True)
 
 
 if __name__ == "__main__":
