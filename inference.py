@@ -251,15 +251,17 @@ def main() -> None:
             run_task(t, session, use_llm=use_llm)
         except RuntimeError as e:
             # Print structured output even when connection fails
+            # Use 0.0001 instead of 0.0 to stay strictly within (0,1)
             print(f"[START] Task {t}", flush=True)
             print(f'[STEP] step=1 action="{{\\"error\\": \\"connection_failed\\"}}" reward=+0.00 done=False error={str(e)}', flush=True)
-            print(f"[END] task={t} score=0.0000 success=False", flush=True)
+            print(f"[END] task={t} score=0.0001 success=False", flush=True)
             print(f"Warning: Could not establish WebSocket connection to {ws_url}: {e}", file=sys.stderr, flush=True)
         except Exception as e:
             # Print structured output even when other errors occur
+            # Use 0.0001 instead of 0.0 to stay strictly within (0,1)
             print(f"[START] Task {t}", flush=True)
             print(f'[STEP] step=1 action="{{\\"error\\": \\"execution_failed\\"}}" reward=+0.00 done=False error={str(e)}', flush=True)
-            print(f"[END] task={t} score=0.0000 success=False", flush=True)
+            print(f"[END] task={t} score=0.0001 success=False", flush=True)
             print(f"Error running task {t}: {e}", file=sys.stderr, flush=True)
         finally:
             if session is not None:

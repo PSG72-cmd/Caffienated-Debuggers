@@ -24,7 +24,10 @@ def _field_accuracy(
     else:
         tag_ok = gold_tags.issubset(guess_tags)
     tag_part = 1.0 if tag_ok else 0.0
-    return (0.3 * float(cat_ok) + 0.3 * float(pri_ok) + 0.25 * float(team_ok) + 0.15 * tag_part)
+    raw = (0.3 * float(cat_ok) + 0.3 * float(pri_ok) + 0.25 * float(team_ok) + 0.15 * tag_part)
+    # Clamp to ensure we never return exactly 0.0 or 1.0
+    epsilon = 0.0001
+    return max(epsilon, min(1.0 - epsilon, raw))
 
 
 def _constraints(
@@ -48,15 +51,23 @@ def _constraints(
         if tg.get("requires_vip_tag"):
             checks.append("vip" in tags)
     if not checks:
-        return 1.0
-    return sum(1.0 for c in checks if c) / len(checks)
+        return 0.5  # Return 0.5 instead of 1.0 to stay strictly within (0, 1)
+    raw = sum(1.0 for c in checks if c) / len(checks)
+    # Clamp to ensure we never return exactly 0.0 or 1.0
+    epsilon = 0.0001
+    return max(epsilon, min(1.0 - epsilon, raw))
 
 
 def grade(
     agent_labels: Mapping[str, Dict[str, Any]], tickets_gold: List[Mapping[str, Any]]
 ) -> float:
     if not tickets_gold:
-        return 0.0
+        return 0.5  # Return middle value instead of 0.0
     acc = sum(_field_accuracy(agent_labels, tg) for tg in tickets_gold) / len(tickets_gold)
     cons = _constraints(agent_labels, tickets_gold)
-    return max(0.0, min(1.0, 0.65 * acc + 0.35 * cons))
+    score = max(0.0, min(1.0, 0.65 * acc + 0.35 * cons))
+    # Clamp to (0, 1) - strictly between, not including endpoints
+    # Use a small epsilon to ensure we never hit 0.0 or 1.0
+    epsilon = 0.0001
+    clamped = max(epsilon, min(1.0 - epsilon, score))
+    return clamped

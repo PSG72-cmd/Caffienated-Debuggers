@@ -3,3 +3,8 @@ __pycache__
 *.pyc
 .git
 .gitignore
+Caffienated-Debuggers
+ticket_triage_env/Caffienated-Debuggers
+ticket_triage_env/ticket_triage_env
+openenv_ticket_triage_env.egg-info
+ticket_triage_env/openenv_ticket_triage_env.egg-info
