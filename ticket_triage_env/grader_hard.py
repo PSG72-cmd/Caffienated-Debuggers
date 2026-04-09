@@ -52,7 +52,10 @@ def _constraints(
             checks.append("vip" in tags)
     if not checks:
         return 0.5  # Return 0.5 instead of 1.0 to stay strictly within (0, 1)
-    return sum(1.0 for c in checks if c) / len(checks)
+    raw = sum(1.0 for c in checks if c) / len(checks)
+    # Clamp to ensure we never return exactly 0.0 or 1.0
+    epsilon = 0.0001
+    return max(epsilon, min(1.0 - epsilon, raw))
 
 
 def grade(

@@ -17,7 +17,10 @@ def _one_ticket(
     team_ok = (g.get("assign_team") or "").lower().strip() == (
         ticket_gold.get("assign_team") or ""
     ).lower().strip()
-    return 0.4 * float(cat_ok) + 0.35 * float(pri_ok) + 0.25 * float(team_ok)
+    raw = 0.4 * float(cat_ok) + 0.35 * float(pri_ok) + 0.25 * float(team_ok)
+    # Clamp to ensure we never return exactly 0.0 or 1.0
+    epsilon = 0.0001
+    return max(epsilon, min(1.0 - epsilon, raw))
 
 
 def grade(

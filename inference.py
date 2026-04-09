@@ -194,7 +194,10 @@ def run_task(task_key: str, session: TicketTriageSession, use_llm: bool) -> Tupl
 
     max_r = MAX_TOTAL_REWARD.get(task_key, 1.0)
     raw = sum(rewards)
-    score = max(0.0, min(1.0, raw / max_r if max_r > 0 else 0.0))
+    raw_score = raw / max_r if max_r > 0 else 0.0
+    # Clamp to ensure score is strictly within (0, 1), never exactly 0.0 or 1.0
+    epsilon = 0.0001
+    score = max(epsilon, min(1.0 - epsilon, raw_score))
     success = score >= SUCCESS_THRESHOLD
     print(f"[END] task={task_key} score={score:.4f} success={success}", flush=True)
     if err_accum:
