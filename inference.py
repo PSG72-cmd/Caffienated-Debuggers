@@ -185,11 +185,23 @@ def main() -> None:
 
     tasks = ["easy", "medium", "hard"]
     for t in tasks:
-        session = TicketTriageSession(ws_url)
+        session = None
         try:
+            session = TicketTriageSession(ws_url)
             run_task(t, session, use_llm=use_llm)
+        except RuntimeError as e:
+            print(f"Fatal error: Could not establish WebSocket connection to {ws_url}", file=sys.stderr)
+            print(f"Details: {e}", file=sys.stderr)
+            raise
+        except Exception as e:
+            print(f"Error running task {t}: {e}", file=sys.stderr)
+            raise
         finally:
-            session.close()
+            if session is not None:
+                try:
+                    session.close()
+                except Exception as e:
+                    print(f"Error closing session: {e}", file=sys.stderr)
 
 
 if __name__ == "__main__":
