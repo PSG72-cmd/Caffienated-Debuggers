@@ -1,6 +1,79 @@
-# ticket_triage_env (OpenEnv)
+---
+title: Cognition Env
+emoji: 🧠
+colorFrom: indigo
+colorTo: purple
+sdk: docker
+python_version: "3.10"
+app_port: 7860
+suggested_hardware: "cpu-basic"
+short_description: Real-world OpenEnv environment for intelligent ticket triage using reinforcement learning.
+tags:
+  - reinforcement-learning
+  - openenv
+  - ai-agents
+  - simulation
+  - llm
+pinned: true
+---
 
-Realistic **IT support ticket triage** environment: an agent assigns **category**, **priority**, **routing team**, and **tags** to simulated tickets, then **submits** for a deterministic grader score in `[0,1]`. Useful for training or evaluating agents on structured operations work (not a toy gridworld).
+# 🧠 Cognition Env
+
+**Cognition Env** is a real-world OpenEnv environment where AI agents learn intelligent IT ticket triage using reinforcement learning ⚙️
+
+---
+
+## 🚀 What This Does
+
+- Simulates real-world **helpdesk ticket triage**
+- Agents learn to:
+  - Assign **category**
+  - Set **priority**
+  - Choose **team**
+  - Add **relevant tags**
+- Uses **reward-driven learning with partial feedback**
+
+---
+
+## 🎯 Tasks
+
+- 🟢 Easy → Basic ticket classification  
+- 🟡 Medium → Multi-ticket structured triage  
+- 🔴 Hard → Complex decision-making with constraints  
+
+✔ Deterministic graders → scores from **0.0 to 1.0**
+
+---
+
+## ⚙️ OpenEnv Compliance
+
+- `reset()` → start episode  
+- `step(action)` → interaction loop  
+- `state()` → current environment state  
+
+✔ Typed models (Pydantic)  
+✔ Reward shaping (not sparse)  
+✔ Clean RL loop  
+
+---
+
+## 🧪 API
+
+```bash
+POST /reset
+POST /step
+GET  /state
+```
+
+---
+
+## 📋 Action / observation / reward models
+
+| Model | Role |
+|-------|------|
+| `TriageAction` | `command`: `set_labels` \| `submit`; optional `ticket_id`, `category`, `priority`, `assign_team`, `tags`. |
+| `TriageObservation` | Task text, ticket list, allowed enums, feedback, `done`, `reward`, `metadata` (includes `grader_score` after submit). |
+| `Reward` | Documented breakdown: `partial_credit`, `penalty`, `terminal_grader_component`, `step_total`. |
 
 ## Action / observation / reward models
 
