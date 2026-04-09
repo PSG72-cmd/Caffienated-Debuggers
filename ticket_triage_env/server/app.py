@@ -15,6 +15,19 @@ app = create_app(
 )
 
 
+@app.get("/")
+async def root():
+    return {
+        "message": "🧠 Cognition Env - Intelligent Ticket Triage with RL",
+        "docs": "/docs",
+        "api": {
+            "reset": "POST /reset",
+            "step": "POST /step",
+            "state": "GET /state"
+        }
+    }
+
+
 def main() -> None:
     import uvicorn
 
