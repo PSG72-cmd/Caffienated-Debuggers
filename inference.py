@@ -190,12 +190,12 @@ def main() -> None:
             session = TicketTriageSession(ws_url)
             run_task(t, session, use_llm=use_llm)
         except RuntimeError as e:
-            print(f"Fatal error: Could not establish WebSocket connection to {ws_url}", file=sys.stderr)
-            print(f"Details: {e}", file=sys.stderr)
-            raise
+            print(f"Warning: Could not establish WebSocket connection to {ws_url}: {e}", file=sys.stderr)
+            print(f"Continuing with next task...", file=sys.stderr)
+            continue
         except Exception as e:
             print(f"Error running task {t}: {e}", file=sys.stderr)
-            raise
+            continue
         finally:
             if session is not None:
                 try:

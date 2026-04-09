@@ -19,7 +19,7 @@ def http_to_ws_url(base_http_url: str) -> str:
 class TicketTriageSession:
     """Minimal sync WebSocket session (uses `websocket-client`)."""
 
-    def __init__(self, ws_url: str, max_retries: int = 3) -> None:
+    def __init__(self, ws_url: str, max_retries: int = 5) -> None:
         import time
         import websocket  # type: ignore
 
@@ -28,12 +28,13 @@ class TicketTriageSession:
         
         for attempt in range(max_retries):
             try:
-                self._ws = websocket.create_connection(ws_url, timeout=10)
+                self._ws = websocket.create_connection(ws_url, timeout=15)
+                print(f"WebSocket connected successfully on attempt {attempt + 1}", file=__import__('sys').stderr)
                 return
             except Exception as e:
                 last_error = e
                 if attempt < max_retries - 1:
-                    wait_time = 2 ** attempt  # exponential backoff: 1s, 2s, 4s
+                    wait_time = 3 ** attempt  # exponential backoff: 3s, 9s, 27s, 81s, 243s
                     print(f"WebSocket connection attempt {attempt + 1}/{max_retries} failed: {e}. Retrying in {wait_time}s...", file=__import__('sys').stderr)
                     time.sleep(wait_time)
         
