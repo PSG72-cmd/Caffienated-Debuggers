@@ -1,10 +1,13 @@
-﻿"""
+"""
 Hackathon-compatible FastAPI entrypoint for Ticket Triage OpenEnv.
 """
 
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import Any, Dict
+import os
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from ticket_triage_env.server.triage_environment import TicketTriageEnvironment
 from ticket_triage_env.models import TriageAction
@@ -15,11 +18,21 @@ app = FastAPI()
 env = TicketTriageEnvironment()
 
 
+# Mount static folder
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+if not os.path.exists(static_dir):
+    os.makedirs(static_dir)
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
 # ---------------------------
 # ROOT ENDPOINT
 # ---------------------------
 
 @app.get("/")
+async def serve_frontend():
+    return FileResponse(os.path.join(static_dir, "index.html"))
+
+@app.get("/info")
 async def root():
     return {
         "message": "🧠 Cognition Env - Intelligent Ticket Triage with RL",
@@ -64,8 +77,8 @@ async def reset():
 @app.post("/step")
 async def step(action: ActionRequest):
 
-    # Convert request → TriageAction
-    triage_action = TriageAction(**action.model_dump())
+    # Convert request → TriageAction, excluding None so defaults apply
+    triage_action = TriageAction(**action.model_dump(exclude_none=True))
 
     obs = env.step(triage_action)
 

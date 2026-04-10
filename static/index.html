@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cognition Env - Intelligent Ticket Triage</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header blur-bg">
+            <div class="brand">
+                <span class="emoji">🧠</span>
+                <div>
+                    <h1>Cognition Env</h1>
+                    <span class="subtitle">Ticket Triage Simulation</span>
+                </div>
+            </div>
+            
+            <div class="task-info">
+                <p id="global-task-text" class="task-text">Welcome. Click 'Reset Environment' to begin a session.</p>
+            </div>
+
+            <div class="stats">
+                <div class="stat-pill">
+                    <span class="label">Total Reward</span>
+                    <strong id="reward-val">0.00</strong>
+                </div>
+                <div class="stat-pill">
+                    <span class="label">Status</span>
+                    <strong id="status-val" class="status-ready">Ready</strong>
+                </div>
+                <button id="btn-reset" class="btn primary-btn pulse-glow">Reset Session</button>
+            </div>
+        </header>
+        
+        <!-- Main Content Layout -->
+        <main class="main-content">
+            <!-- Left Pane: Ticket Queue -->
+            <div class="left-pane blur-bg card">
+                <div class="pane-header">
+                    <h2>Ticket Queue</h2>
+                    <span class="badge" id="queue-count">0 Tickets</span>
+                </div>
+                <div class="ticket-list" id="ticket-list">
+                    <div class="empty-state">No active tickets. Reset session to start.</div>
+                </div>
+            </div>
+            
+            <!-- Right Pane: Triage Interface -->
+            <div class="right-pane blur-bg card">
+                <div class="pane-header flex-between">
+                    <h2>Triage Workbench</h2>
+                    <button id="btn-submit-episode" class="btn danger-btn" disabled>Submit Episode</button>
+                </div>
+                
+                <div id="active-ticket-area" class="active-ticket-area unselected">
+                    <div class="empty-state" id="unselected-state">
+                        <span class="icon">👈</span>
+                        <p>Select a ticket from the queue to triage</p>
+                    </div>
+
+                    <div class="ticket-form" id="triage-form" style="display: none;">
+                        <div class="form-header">
+                            <h3 id="form-ticket-id">TRG-000</h3>
+                        </div>
+                        
+                        <div class="ticket-body" id="form-ticket-body">
+                            <!-- Ticket body goes here -->
+                        </div>
+                        
+                        <div class="controls-grid">
+                            <div class="form-group">
+                                <label for="sel-category">Category</label>
+                                <select id="sel-category" class="custom-select">
+                                    <option value="">-- Select Category --</option>
+                                    <!-- Options populated dynamically -->
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="sel-priority">Priority</label>
+                                <select id="sel-priority" class="custom-select">
+                                    <option value="">-- Select Priority --</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="sel-team">Assign Team (Optional)</label>
+                                <select id="sel-team" class="custom-select">
+                                    <option value="">-- No Team --</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="inp-tags">Tags (Optional, comma-separated)</label>
+                                <input type="text" id="inp-tags" class="custom-input" placeholder="e.g. vip, sensitive" />
+                            </div>
+                        </div>
+                        
+                        <div class="action-footer">
+                            <div class="feedback-msg" id="action-feedback"></div>
+                            <button id="btn-apply-labels" class="btn accent-btn shadow-glow">Apply Labels</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Episode Results Modal -->
+        <div id="results-modal" class="modal-overlay hidden">
+            <div class="modal-content blur-bg">
+                <h2 class="modal-title">Episode Complete! 🎉</h2>
+                <div class="modal-body">
+                    <div class="score-display">
+                        <span class="score-label">Final Grader Score</span>
+                        <h1 id="modal-grader-score">0.00</h1>
+                    </div>
+                    <p class="reward-sub">Accumulated Reward: <span id="modal-total-reward">0.00</span></p>
+                    
+                    <div class="feedback-scroll" id="modal-feedback-list">
+                        <!-- Breakdown of grader feedback -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="btn-close-modal" class="btn primary-btn">Close & Reset</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/main.js"></script>
+</body>
+</html>
