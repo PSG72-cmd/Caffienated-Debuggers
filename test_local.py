@@ -6,7 +6,7 @@ import time
 import requests
 from threading import Thread
 
-def check_server_health(url="http://127.0.0.1:8000/health", max_retries=30):
+def check_server_health(url="http://127.0.0.1:8000/", max_retries=30):
     """Check if server is healthy."""
     for attempt in range(max_retries):
         try:

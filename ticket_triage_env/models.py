@@ -1,4 +1,36 @@
-﻿"""Pydantic models: Action, Observation, Reward (structured reward breakdown)."""
+﻿"""
+Pydantic v2 models for Cognition Env (ticket triage environment).
+
+This module defines the contract between agents and the environment:
+  - TriageAction: What agents can do
+  - TriageObservation: What agents see
+  - Reward: Structured reward breakdown
+  - TicketView: Individual ticket representation
+
+All models use Pydantic v2 for automatic validation, serialization (JSON),
+and API documentation (OpenAPI/Swagger).
+
+Example:
+    # Create an action
+    action = TriageAction(
+        command="set_labels",
+        ticket_id="TICK-001",
+        category="technical",
+        priority="P3",
+        assign_team="tier1",
+        tags=["urgent"]
+    )
+    
+    # Create an observation (typically returned by environment)
+    obs = TriageObservation(
+        task_key="easy",
+        tickets=[...],
+        reward=0.25,
+        done=False,
+        feedback="Category set correctly",
+        ...
+    )
+"""
 
 from __future__ import annotations
 
