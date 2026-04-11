@@ -6,8 +6,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
 
 COPY pyproject.toml README.md openenv.yaml ./
 COPY ticket_triage_env ./ticket_triage_env
+COPY static ./static
 COPY inference.py ./inference.py
-COPY app.py ./app.py
 
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir .
