@@ -7,7 +7,7 @@ sdk: docker
 python_version: "3.10"
 app_port: 7860
 suggested_hardware: "cpu-basic"
-short_description: OpenEnv environment for AI agent training in IT support ticket triage
+short_description: AI learns IT ticket triage with RL
 tags:
   - reinforcement-learning
   - openenv
