@@ -1,61 +1,4 @@
-"""
-Core RL environment for IT support ticket triage with reward shaping.
-
-This module implements `TicketTriageEnvironment`, which simulates a real-world
-helpdesk ticket triage scenario. Agents learn to:
-  - Classify tickets (category, priority)
-  - Route to teams (tier1, tier2, oncall, billing_ops)
-  - Apply relevant tags (e.g., vip, urgent, finance_review)
-
-## Key Design Patterns
-
-1. **Reward Shaping:** Agents receive partial credit (+0.1–0.5) when fields become
-   correct, enabling faster training than sparse rewards. Terminal reward comes from
-   deterministic graders (0.0–1.0 based on task correctness).
-
-2. **Three Task Levels:**
-   - Easy: 1 ticket, 2 fields (category + priority)
-   - Medium: 3 tickets, 3 fields each (category + priority + team)
-   - Hard: 5 tickets, 3 fields + global business logic constraints
-
-3. **Deterministic Grading:** Same input always produces same score, ensuring
-   reproducible evaluation across agents and seeds.
-
-4. **Episode State Management:** Each episode tracks:
-   - Agent assignments (what agent has set so far)
-   - Credited fields (prevent double-rewarding)
-   - Gold labels (hidden from agent, used for grading)
-   - Cumulative rewards
-
-## Reward Breakdown
-
-- **set_labels action:** Per-field partial credit (first-time only)
-- **submit action:** Terminal reward = base_score + (0.5 × grader_score)
-- **After submit:** Small negative penalty (-0.02) to discourage post-submission steps
-
-## Example Usage
-
-    from ticket_triage_env.server.triage_environment import TicketTriageEnvironment
-    from ticket_triage_env.models import TriageAction
-    
-    env = TicketTriageEnvironment()
-    obs = env.reset(task="easy")  # Start easy task
-    
-    # Agent takes action
-    action = TriageAction(
-        command="set_labels",
-        ticket_id=obs.tickets[0].id,
-        category="technical",
-        priority="P3"
-    )
-    obs = env.step(action)
-    print(f"Reward: {obs.reward}, Feedback: {obs.feedback}")
-    
-    # Agent submits when confident
-    submit_action = TriageAction(command="submit")
-    obs = env.step(submit_action)
-    print(f"Done: {obs.done}, Grader Score: {obs.metadata['grader_score']}")
-"""
+"""Ticket triage environment: reset, step, state, rewards, and task episodes."""
 
 from __future__ import annotations
 
@@ -78,80 +21,26 @@ from ticket_triage_env.models import Reward, TicketView, TriageAction, TriageObs
 
 
 def _norm_tag_list(tags: List[str]) -> List[str]:
-    """
-    Normalize and deduplicate a list of tags.
-    
-    Converts to lowercase, strips whitespace, deduplicates, and sorts.
-    Empty strings are removed.
-    
-    Args:
-        tags: List of tag strings (may have duplicates or whitespace)
-    
-    Returns:
-        Sorted list of unique, normalized tags
-    
-    Example:
-        >>> _norm_tag_list(["VIP", "  urgent  ", "vip"])
-        ['urgent', 'vip']
-    """
     return sorted({t.lower().strip() for t in tags if t.strip()})
 
 
 class TicketTriageEnvironment(Environment[TriageAction, TriageObservation, State]):
-    """
-    OpenEnv environment for IT support ticket triage with reinforcement learning.
-    
-    This environment simulates a helpdesk where agents learn to triage support tickets
-    by assigning categories, priorities, teams, and tags. It provides reward shaping
-    to accelerate RL training and deterministic grading for reproducible evaluation.
-    
-    Attributes:
-        SUPPORTS_CONCURRENT_SESSIONS (bool): Indicates this environment can handle
-            multiple simultaneous episodes (true).
-    
-    Task Modes:
-        - "easy": Single ticket, 2 fields (category + priority)
-        - "medium": 3 tickets, 3 fields each (category + priority + team)
-        - "hard": 5 tickets, 3 fields + business logic constraints
-    
-    Actions:
-        - "set_labels": Update one ticket's assigned fields
-        - "submit": End episode and trigger grading
-    
-    Rewards:
-        - Partial credit: +0.1–0.5 per correct field (first time only)
-        - Terminal reward: 0.5–1.0 based on grader score
-        - Penalties: -0.05–-0.1 for invalid actions
-    
-    Interface Compliance:
-        Fully implements OpenEnv Environment interface:
-        - reset(seed, episode_id, **kwargs) -> Observation
-        - step(action) -> Observation
-        - get_metadata() -> EnvironmentMetadata
-    """
+    """Simulates helpdesk triage with partial per-step rewards and terminal grading."""
 
     SUPPORTS_CONCURRENT_SESSIONS = True
 
     def get_metadata(self) -> EnvironmentMetadata:
-        """
-        Return environment metadata for OpenEnv registration.
-        
-        Returns:
-            EnvironmentMetadata with name, description, version, author
-        """
         return EnvironmentMetadata(
             name="ticket_triage_env",
             description=(
                 "IT ticket triage: assign category, priority, team, and tags; "
-                "three graded tasks (easy/medium/hard) with reward shaping and "
-                "deterministic terminal evaluation."
+                "three graded tasks (easy/medium/hard)."
             ),
             version="0.1.0",
             author="OpenEnv Hackathon",
         )
 
     def __init__(self) -> None:
-        """Initialize environment state (empty until reset is called)."""
         super().__init__(transform=None, rubric=None)
         self._state = State(episode_id=str(uuid4()), step_count=0)
         self._task_key: TaskKey = "easy"
@@ -170,18 +59,6 @@ class TicketTriageEnvironment(Environment[TriageAction, TriageObservation, State
         feedback: str,
         extra_meta: Optional[Dict[str, Any]] = None,
     ) -> TriageObservation:
-        """
-        Construct a TriageObservation with current episode state.
-        
-        Args:
-            done: Whether episode is finished
-            reward: Scalar reward for this step
-            feedback: Human-readable feedback on agent's action
-            extra_meta: Additional metadata (e.g., grader_score)
-        
-        Returns:
-            TriageObservation with all required fields populated
-        """
         meta: Dict[str, Any] = {"reward_breakdown": None, "grader_score": None}
         if extra_meta:
             meta.update(extra_meta)
@@ -207,19 +84,120 @@ class TicketTriageEnvironment(Environment[TriageAction, TriageObservation, State
         episode_id: Optional[str] = None,
         **kwargs: Any,
     ) -> TriageObservation:
-        """
-        Initialize a new episode.
-        
-        Loads the task configuration, resets agent state, and returns initial
-        observation with tickets and instructions.
-        
-        Args:
-            seed: Random seed (currently unused; fixtures are deterministic)
-            episode_id: Custom episode ID (default: UUID4)
-            **kwargs: Extra options including 'task' to specify (easy|medium|hard)
-        
-        Returns:
-            TriageObservation with initial state (done=False, reward=0.0)
+        task = kwargs.get("task")
+        if task not in ("easy", "medium", "hard", None):
+            task = "easy"
+        task_key: TaskKey = task if task is not None else "easy"
+
+        self._state = State(episode_id=episode_id or str(uuid4()), step_count=0)
+        self._task_key = task_key
+        self._cfg = copy.deepcopy(EPISODES[task_key])
+        self._gold = copy.deepcopy(self._cfg["gold"])
+        self._tickets_view = [TicketView(**t) for t in self._cfg["tickets_public"]]
+        self._agent = {}
+        self._credited = {g["id"]: set() for g in self._gold}
+        self._submitted = False
+        _ = seed
+
+        return self._build_observation(
+            done=False,
+            reward=0.0,
+            feedback="Episode started. Use set_labels per ticket, then submit.",
+        )
+
+    def _validate_enums(self, action: TriageAction) -> Optional[str]:
+        if action.category and action.category.lower().strip() not in ALLOWED_CATEGORIES:
+            return f"Invalid category {action.category!r}."
+        if action.priority and action.priority.strip() not in ALLOWED_PRIORITIES:
+            return f"Invalid priority {action.priority!r}."
+        if action.assign_team and action.assign_team.lower().strip() not in ALLOWED_TEAMS:
+            return f"Invalid assign_team {action.assign_team!r}."
+        return None
+
+    def _gold_for(self, ticket_id: str) -> Optional[Dict[str, Any]]:
+        for g in self._gold:
+            if g["id"] == ticket_id:
+                return g
+        return None
+
+    def _partial_for_ticket(
+        self, ticket_id: str, slot: Dict[str, Any], gold: Dict[str, Any]
+    ) -> Tuple[float, List[str]]:
+        credited = self._credited.setdefault(ticket_id, set())
+        add = 0.0
+        msgs: List[str] = []
+
+        def try_field(key: str, ok: bool, weight: float, label: str) -> None:
+            nonlocal add
+            if ok and key not in credited:
+                credited.add(key)
+                add += weight
+                msgs.append(f"+{weight:.2f} {label} correct")
+
+        cat = (slot.get("category") or "").lower().strip()
+        pri = (slot.get("priority") or "").strip()
+        team = (slot.get("assign_team") or "").lower().strip()
+        tags = set(_norm_tag_list(list(slot.get("tags") or [])))
+
+        try_field("category", bool(cat) and cat == gold["category"], 0.18, "category")
+        try_field("priority", bool(pri) and pri == gold["priority"], 0.18, "priority")
+        try_field(
+            "assign_team",
+            bool(team) and team == gold["assign_team"],
+            0.14,
+            "team",
+        )
+        gold_tags = {t.lower() for t in (gold.get("tags") or [])}
+        if gold_tags and gold_tags.issubset(tags):
+            if "tags" not in credited:
+                credited.add("tags")
+                add += 0.2
+                msgs.append("+0.20 required tags satisfied")
+
+        return add, msgs
+
+    def _merge_slot(self, ticket_id: str, action: TriageAction) -> Dict[str, Any]:
+        cur = dict(self._agent.get(ticket_id, {}))
+        if action.category:
+            cur["category"] = action.category.lower().strip()
+        if action.priority:
+            cur["priority"] = action.priority.strip()
+        if action.assign_team:
+            cur["assign_team"] = action.assign_team.lower().strip()
+        if action.tags:
+            merged = set(_norm_tag_list(list(cur.get("tags") or [])))
+            merged.update(_norm_tag_list(action.tags))
+            cur["tags"] = sorted(merged)
+        self._agent[ticket_id] = cur
+        return cur
+
+    def step(
+        self,
+        action: TriageAction,
+        timeout_s: Optional[float] = None,
+        **kwargs: Any,
+    ) -> TriageObservation:
+        self._state.step_count += 1
+        _ = timeout_s
+
+        if self._submitted:
+            r = Reward(
+                step_total=-0.02,
+                partial_credit=0.0,
+                penalty=-0.02,
+                terminal_grader_component=0.0,
+            )
+            obs = self._build_observation(
+                done=True,
+                reward=r.step_total,
+                feedback="Episode already finished.",
+                extra_meta={"reward_breakdown": r.model_dump(), "grader_score": None},
+            )
+            obs.metadata["reward_breakdown"] = r.model_dump()
+            return obs
+
+        err = self._validate_enums(action)
+        if err:
             r = Reward(
                 step_total=-0.08,
                 partial_credit=0.0,
