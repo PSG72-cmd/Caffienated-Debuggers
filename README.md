@@ -36,22 +36,6 @@ pinned: true
 
 ---
 
-## 🎯 Quick Start
-
-```bash
-# 1. Clone and install
-git clone <repo-url>
-cd ticket_triage_env
-python -m venv .venv
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
-pip install -e .
-
-# 2. Run the environment server
-python -m uvicorn ticket_triage_env.server.app:app --host 0.0.0.0 --port 8000
-
-# 3. In another terminal, run an example agent
-python inference.py
-```
 
 **Expected Output:**
 ```
