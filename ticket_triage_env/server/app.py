@@ -1,4 +1,4 @@
-﻿"""
+"""
 FastAPI application server for Cognition Env (OpenEnv ticket triage environment).
 
 This module creates the HTTP REST API and WebSocket interface for the IT support
@@ -22,6 +22,7 @@ Example:
 from __future__ import annotations
 
 from openenv.core.env_server.http_server import create_app
+from fastapi.middleware.cors import CORSMiddleware
 
 from ticket_triage_env.models import TriageAction, TriageObservation
 from ticket_triage_env.server.triage_environment import TicketTriageEnvironment
@@ -33,6 +34,15 @@ app = create_app(
     TriageAction,
     TriageObservation,
     env_name="ticket_triage_env",
+)
+
+# Enable CORS for Vercel frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 

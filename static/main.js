@@ -1,4 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- Backend API Base URL ---
+    // When served from the same server (HF Space / local), use '' (same origin).
+    // When deployed to Vercel or another static host, point to your HF Space.
+    const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? ''  // local dev: same origin
+        : 'https://psg-hf72-cognition-env.hf.space';  // production: HF Space backend
+
     // --- Elements ---
     const btnReset = document.getElementById('btn-reset');
     const btnSubmitEpisode = document.getElementById('btn-submit-episode');
@@ -43,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function resetEnvironment() {
         setLoading(true);
         try {
-            const res = await fetch('/reset', { method: 'POST' });
+            const res = await fetch(API_BASE + '/reset', { method: 'POST' });
             const data = await res.json();
             
             accumulatedReward = data.reward;
@@ -60,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function takeStep(actionPayload) {
         setLoading(true);
         try {
-            const res = await fetch('/step', {
+            const res = await fetch(API_BASE + '/step', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(actionPayload)
@@ -83,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setLoading(false);
         }
     }
+
     
     // --- UI Logic ---
     

@@ -8,14 +8,25 @@ from typing import Any, Dict
 import os
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from ticket_triage_env.server.triage_environment import TicketTriageEnvironment
 from ticket_triage_env.models import TriageAction
 
 app = FastAPI()
 
+# Enable CORS for Vercel frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Initialize environment
 env = TicketTriageEnvironment()
+
 
 
 # Mount static folder
