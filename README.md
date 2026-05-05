@@ -16,7 +16,6 @@ tags:
   - llm
 pinned: true
 ---
-
 # 🧠 Cognition Env
 
 **Cognition Env** is a production-grade OpenEnv environment for training AI agents using reinforcement learning to perform intelligent IT helpdesk ticket triage.
