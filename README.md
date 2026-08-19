@@ -34,8 +34,6 @@ pinned: true
 > - Production-ready AI agents for support automation
 
 ---
-
-
 **Expected Output:**
 ```
 [START] task=easy
@@ -43,7 +41,6 @@ pinned: true
 [STEP] step=2 action="submit" reward=0.72 done=True
 [END] task=easy score=0.72 success=true
 ```
-
 ---
 
 ## 🏗️ Architecture Overview
